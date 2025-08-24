@@ -1,7 +1,4 @@
 import mdcb.util as util
-import asyncio
-import os
-import json
 import whisper
 import torch
 from pyannote.audio import Pipeline
@@ -15,17 +12,74 @@ whisperModel = None
 ttsModel = None
 diarizationModel = None
 diarizationAceessToken = None
+# --- New helpers for device + cleanup ---
+def _get_device():
+    if torch.cuda.is_available():
+        return "cuda"
+    if getattr(torch.backends, "mps", None) and torch.backends.mps.is_available():
+        return "mps"
+    return "cpu"
+
+def unload_models():
+    """Try to release large models and free GPU/MPS memory, then force GC."""
+    global whisperModel, ttsModel, diarizationModel, diarizationAceessToken
+    for name in ("whisperModel", "ttsModel", "diarizationModel"):
+        model = globals().get(name)
+        if model is None:
+            continue
+        try:
+            # try to move to CPU first (helps CUDA)
+            if hasattr(model, "to"):
+                try:
+                    model.to("cpu")
+                except Exception:
+                    pass
+            # try to call a close/release hook if present
+            if hasattr(model, "close"):
+                try:
+                    model.close()
+                except Exception:
+                    pass
+            # try a generic release
+        except Exception:
+            pass
+        try:
+            globals()[name] = None
+        except Exception:
+            pass
+
+    # empty CUDA cache if available
+    try:
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+    except Exception:
+        pass
+
+    # attempt MPS cache clear if API exists
+    try:
+        mps_empty = getattr(torch, "mps", None)
+        if mps_empty and hasattr(torch.mps, "empty_cache"):
+            try:
+                torch.mps.empty_cache()
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+    # finally force Python GC
+    gc.collect()
+
+
 #------Main Audio AI trnascription------#
 #------Get Audio Sentences------
 def getAudioSentences(audio:util.MediaFile,lang:str) -> list[util.AudioSentence]:
-    return mergeAudioSentences(
-        diarizeAudioFile(audio,diarizationAceessToken),
-        transcribeAudioFile(audio,lang,"medium")
-    )
-    del whisperModel
-    del diarizationModel
-    gc.collect()
-    pass
+    try:
+        diar = diarizeAudioFile(audio,diarizationAceessToken)
+        segs = transcribeAudioFile(audio,lang,"medium")
+        return mergeAudioSentences(diar, segs)
+    finally:
+        # always try to free large models after use (caller can choose not to)
+        unload_models()
 #------Save Audio Sentences------
 def saveAudioSentences(sentences: list[util.AudioSentence],file:util.MediaFile):
     util.saveAudioSentencesToFile(sentences,file.getPath())
@@ -78,12 +132,22 @@ def transcribeAudioFile(audio:util.MediaFile,
                         lang:str,
                         modelSize:str):
     global whisperModel
+    device = _get_device()
     if whisperModel is None:
-        print(f"Loading Whisper model: {modelSize}")
-        whisperModel = whisper.load_model(modelSize,dtype=torch.float16)
-    print(f"Transcribing audio file: {audio.filePath} with language: {lang}")
-    result = whisperModel.transcribe(audio.filePath, language=lang)
-    return result["segments"]
+        print(f"Loading Whisper model: {modelSize} on {device}")
+        # load model; keep on default device then move if needed
+        whisperModel = whisper.load_model(modelSize)
+        try:
+            if device != "cpu" and hasattr(whisperModel, "to"):
+                whisperModel.to(device)
+        except Exception:
+            pass
+
+    print(f"Transcribing audio file: {audio.getPath()} with language: {lang}")
+    # use no_grad to reduce memory pressure during inference
+    with torch.no_grad():
+        result = whisperModel.transcribe(audio.getPath(), language=lang)
+    return result.get("segments", [])
 #------Diarization:get diarization------
 def diarizeAudioFile(audio:util.MediaFile,accessToken:str = diarizationAceessToken):
     global diarizationModel
