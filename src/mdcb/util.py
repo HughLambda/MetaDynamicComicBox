@@ -1,6 +1,7 @@
 import os
 import json
 
+#------Audio Sentence class------
 
 class AudioSentence:    
     """
@@ -22,6 +23,42 @@ class AudioSentence:
             "text": self.text,
             "speaker": self.speaker
         })
+#------Audio Sentence Functions------
+"""
+loadAudioSentencesFromJson: Load a list of AudioSentence objects from a JSON string.
+loadAudioSentencesFromFile: Load a list of AudioSentence objects from a JSON file.
+saveAudioSentencesToFile: Save a list of AudioSentence objects to a JSON file.
+"""
+def loadAudioSentencesFromJson(jsonStr: str) -> list[AudioSentence]:
+    data = json.loads(jsonStr)
+    sentences = []
+    for item in data:
+        sentence = AudioSentence(
+            start=item.get("start", 0.0),
+            end=item.get("end", 0.0),
+            text=item.get("text", ""),
+            speaker=item.get("speaker", "")
+        )
+        sentences.append(sentence)
+    return sentences
+
+def loadAudioSentencesFromFile(filePath: str) -> list[AudioSentence]:
+    with open(filePath, 'r', encoding='utf-8') as f:
+        jsonStr = f.read()
+    return loadAudioSentencesFromJson(jsonStr)
+
+def saveAudioSentencesToFile(sentences: list[AudioSentence], filePath: str):
+    data = []
+    for sentence in sentences:
+        data.append({
+            "start": sentence.start,
+            "end": sentence.end,
+            "text": sentence.text,
+            "speaker": sentence.speaker
+        })
+    with open(filePath, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=4)
+#------Processing Tag class------
 
 class ProcessingTag:
     """
@@ -30,6 +67,8 @@ class ProcessingTag:
     def __init__(self, name: str):
         self.name = name
         pass
+
+#------Media File class------
 
 class MediaFile:
     """
