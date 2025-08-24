@@ -111,11 +111,11 @@ def ttsInit():
     tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2",progress_bar=True).to(device)
     return tts
 
-def textToAudioFile(sentence:util.AudioSentence,file:util.MediaFile,speaker:str):
+def textToAudioFile(sentence:util.AudioSentence,file:util.MediaFile):
     global ttsModel
     if ttsModel is None:
         print("Loading TTS model")
         ttsModel = ttsInit()
-    print(f"Generating speech for text: {sentence.text[:30]}... with speaker:{speaker}")
-    ttsModel.tts_to_file(text=sentence.text,speaker=speaker, file_path=file.getPath())
+    print(f"Generating speech for text: {sentence.text[:30]}... with speaker:{sentence.speaker}")
+    ttsModel.tts_to_file(text=sentence.text,speaker=sentence.speaker, file_path=file.getPath())
     pass
