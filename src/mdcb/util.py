@@ -11,17 +11,20 @@ class AudioSentence:
                  start: float,
                     end: float,
                       text: str,
-                      speaker: str):
+                      speaker: str,
+                      lang: str):
         self.start = start
         self.end = end
         self.text = text
         self.speaker = speaker
+        self.lang = lang
     def getJson(self) -> str:
         return json.dumps({
             "start": self.start,
             "end": self.end,
             "text": self.text,
-            "speaker": self.speaker
+            "speaker": self.speaker,
+            "lang": self.lang
         })
 #------Audio Sentence Functions------
 """
@@ -37,7 +40,8 @@ def loadAudioSentencesFromJson(jsonStr: str) -> list[AudioSentence]:
             start=item.get("start", 0.0),
             end=item.get("end", 0.0),
             text=item.get("text", ""),
-            speaker=item.get("speaker", "")
+            speaker=item.get("speaker", ""),
+            lang=item.get("lang", "en")
         )
         sentences.append(sentence)
     return sentences
@@ -54,7 +58,8 @@ def saveAudioSentencesToFile(sentences: list[AudioSentence], filePath: str):
             "start": sentence.start,
             "end": sentence.end,
             "text": sentence.text,
-            "speaker": sentence.speaker
+            "speaker": sentence.speaker,
+            "lang": sentence.lang
         })
     with open(filePath, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
