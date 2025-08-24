@@ -141,17 +141,16 @@ def mergeAudioLoopBGM(audio: util.MediaFile,bgm: util.MediaFile,volume: float) -
     allFilters = ";".join([mainFilter] + bgmFilters + [finalFilter])
     cmd = [
         'ffmpeg',
-        '-i', audio.getPath()  # 主音频输入
+        '-i', audio.getPath()  
     ]
-    # 添加所有BGM输入
     for _ in range(loopCount):
         cmd.extend(['-i', bgm.getPath()])
     outputFile = audio.getNewFile("bgmMerged")
     cmd.extend([
         '-filter_complex', allFilters,
         '-map', '[a]',
-        '-c:a', 'pcm_s16le',  # WAV格式
-        '-y',  # 覆盖现有文件
+        '-c:a', 'pcm_s16le', 
+        '-y',  
         outputFile.getPath()
     ])
     try:
