@@ -1,6 +1,6 @@
 import os
 import subprocess
-import util
+import mdcb.util as util
 
 #------Download Video Functions------
 def downloadVideo(url: str, file: util.MediaFile) -> util.MediaFile:

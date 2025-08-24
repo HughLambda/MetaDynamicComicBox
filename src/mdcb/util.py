@@ -58,15 +58,6 @@ def saveAudioSentencesToFile(sentences: list[AudioSentence], filePath: str):
         })
     with open(filePath, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
-#------Processing Tag class------
-
-class ProcessingTag:
-    """
-    A tag to indicate that a certain processing step has been applied to the media file.
-    """
-    def __init__(self, name: str):
-        self.name = name
-        pass
 
 #------Media File class------
 
@@ -82,15 +73,15 @@ class MediaFile:
         self.title = title
         self.tags = []
         self.ext = ext
-    def addTag(self, tag: ProcessingTag):
+    def addTag(self, tag: str):
         self.tags.append(tag)
-    def getNewFile(self, tag: ProcessingTag):
+    def getNewFile(self, tag: str,) -> 'MediaFile':
         newFile = MediaFile(self.base, self.title, self.ext)
-        newFile.tags = self.tags.copy()
+        newFile.tags = [t for t in self.tags]
         newFile.addTag(tag)
         return newFile
     def getPath(self) -> str:
         tagText = ""
         for tag in self.tags:
-            tagText += f"-{tag.name}"
+            tagText += f"-{tag}"
         return os.path.join(self.base, f"{self.title}{tagText}{self.ext}")
