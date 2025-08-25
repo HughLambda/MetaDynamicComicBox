@@ -1,4 +1,5 @@
 import mdcb.util as util
+import mdcb.audio as a
 import whisper
 import torch
 from pyannote.audio import Pipeline
@@ -182,4 +183,16 @@ def textToAudioFile(sentence:util.AudioSentence,file:util.MediaFile):
         ttsModel = ttsInit()
     print(f"Generating speech for text: {sentence.text[:30]}... with speaker:{sentence.speaker}")
     ttsModel.tts_to_file(text=sentence.text,speaker_wav=sentence.speaker, file_path=file.getPath(), language=sentence.lang)
+    pass
+
+def autoTextToAudioFile(sentences:list[util.AudioSentence],file:util.MediaFile) -> util.MediaFile:
+    lang:str = sentences[0].lang if len(sentences)>0 else "en"
+    mergeFiles: list[util.MediaFile] = []
+    for i in range(len(sentences)):
+        s:util.AudioSentence = sentences[i]
+        iFile:util.MediaFile = file.getNewFile(lang).getNewFile(i)
+        textToAudioFile(s,iFile)
+        aFile:util.MediaFile = a.adjustAudioDuration(iFile,s.end-s.start)
+        mergeFiles.append(aFile)
+    return a.mergeAudioFiles(mergeFiles,file)
     pass
