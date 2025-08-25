@@ -3,12 +3,34 @@ from volcengine.ApiInfo import ApiInfo
 from volcengine.Credentials import Credentials
 from volcengine.ServiceInfo import ServiceInfo
 from volcengine.base.Service import Service
+import mdcb.util as util
 
 
 # Model translation function placeholder
+
 def translate(text: str,
             origin: str,
             out: str) -> str:
+    pass
+#auto translate a list of sentences
+def autoTranslate(sentences:list[util.AudioSentence],
+                  origin:str,
+                  out:str,
+                  accessKey:str,
+                  secretKey:str) -> list[util.AudioSentence]:
+    translated: list[util.AudioSentence] = []
+    for s in sentences:
+        t = translate(s.text,origin,out,accessKey,secretKey)
+        if t is None:
+            t = s.text
+        translated.append(util.AudioSentence(
+            start=s.start,
+            end=s.end,
+            speaker=s.speaker,
+            text=t,
+            lang=out
+        ))
+    return translated
     pass
 # Translation example function using VolcEngine API
 def translate(text: str,
